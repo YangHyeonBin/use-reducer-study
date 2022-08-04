@@ -1,90 +1,81 @@
-import { Fragment, useReducer, useState } from "react";
-
-import styles from './Attendance.module.css';
-
-const ACTION_TYPES = {
-  add: 'ADD',
-  del: 'DELETE',
-  attend: 'ATTEND',
-  na: 'NOT ATTEND',
-}
+import { Fragment, useState, useReducer } from 'react';
+import Student from './Student';
 
 const studentsReducer = (state, action) => {
   switch (action.type) {
-    case ACTION_TYPES.add:
-      return (state.concat(action.payload))
-      // break; // return 때문에 break 필요 X
-    case ACTION_TYPES.del:
-      return (state.filter(student => student.id !== action.id))
-      // break;
-    case ACTION_TYPES.attend:
-      // sth
-      // break;
-    case ACTION_TYPES.na:
-      // sth
-      // break;
+    case 'ADD':
+      const name = action.payload.name;
+      return ({
+        count: state.count + 1,
+        students: state.students.concat({
+          id: Date.now(),
+          name,
+          isHere: false,
+        })
+      })
+    case 'DELETE':
+      const id = action.payload;
+      return ({
+        count: state.count - 1,
+        students: state.students.filter(student => student.id !== id)
+      })
+    case 'MARK':
+      return ({
+        count: state.count,
+        students: state.students.map(student => {
+          if (student.id === action.payload) {
+            return {...student, isHere: !student.isHere} // student의 다른 값들은 동일하게 가져가고, isHere만 바꿔준다.
+          } else {
+            return student;
+          }
+        })
+      })
     default:
-      // sth
+      return state;
   }
 };
 
+const studentsInitailState = {
+  count: 0,
+  students: [],
+};
+
 const Attendance = () => {
-  const [studentAmount, setStudentAmount] = useState(0);
+  const [name, setName] = useState('');
 
-  const [students, dispatchStudents] = useReducer(studentsReducer, [{ id: '', name: '', }, ]);
+  const [studentList, dispatchStudents] = useReducer(studentsReducer, studentsInitailState);
 
-  const inputChangeHandler = e => {
-    
-  }
-
-  const listClickHandler = () => {
-
+  const inputChangeHandler = (e) => {
+    setName(e.target.value);
   };
 
-  const formSubmitHandler = e => {
+  const addHandler = (e) => {
     e.preventDefault();
 
-    dispatchStudents({
-      type: ACTION_TYPES.add,
-      payload: {
-        id: Math.random(),
-        name: e.target[0].value,
-      },
-    })
-  }
-
-  const addStudentAmountHandler = () => {
-    setStudentAmount(prevStudents => {
-      return (prevStudents + 1) // 리턴 값이 단일한 변수 같은 거면 return 안 써도 되나, 지금 같은 경우는 return () 꼭 써줘야 하는 듯?!
-    })
-    console.log(students)
-  };
-
-  const removeStudentAmountHandler = () => {
-    setStudentAmount(prevState => {
-      return (prevState - 1)
-    })
-    console.log(students)
+    dispatchStudents({ type: 'ADD', payload: {name} })
+    setName('');
   };
 
   return (
     <Fragment>
       <h1>출석부</h1>
-      <p>총 학생 수: {studentAmount}</p>
-      <form onSubmit={formSubmitHandler}>
-        <input type='text' onChange={inputChangeHandler} />
-        <button onClick={addStudentAmountHandler}>추가</button>
-        <ul>
-          <li>
-            <span onClick={listClickHandler}>
-              {students[1].name}
-            </span>
-            <button type='button' onClick={removeStudentAmountHandler}>삭제</button>
-          </li>
-        </ul>
+      <p>총 학생 수: {studentList.count}</p>
+      <form onSubmit={addHandler}>
+        <input
+          type="text"
+          placeholder="이름을 입력하세요."
+          value={name}
+          onChange={inputChangeHandler}
+        />
+        <button type="button" onClick={addHandler}>추가</button>
       </form>
+      <ul>
+        {studentList.students.map((student) => (
+          <Student key={student.id} name={student.name} id={student.id} dispatchStudents={dispatchStudents} isHere={student.isHere} />
+        ))}
+      </ul>
     </Fragment>
-  )
+  );
 };
 
 export default Attendance;
